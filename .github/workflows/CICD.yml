@@ -1,0 +1,36 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main  # Thay thế bằng tên nhánh mà bạn muốn trigger CI/CD (ví dụ: main, master)
+
+jobs:
+  deploy:
+    runs-on: self-hosted  # Sử dụng runner tự host
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'  # Thay đổi phiên bản PHP nếu cần
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+
+      - name: Install WordPress CLI
+        run: |
+          curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          chmod +x wp-cli.phar
+          sudo mv wp-cli.phar /usr/local/bin/wp
+
+      - name: Deploy WordPress
+        run: |
+          cd /var/www/html/WP-and-WOO
+          sudo git pull origin main  # Cập nhật mã nguồn từ GitHub
+          sudo git checkout main  # Đảm bảo đang ở nhánh main
+          sudo chown -R www-data:www-data /var/www/html/WP-and-WOO  # Đảm bảo quyền sở hữu cho web server
+          sudo service nginx reload  # Khởi động lại dịch vụ Nginx
